@@ -1,0 +1,14 @@
+#This file is an exemple of an account file
+#An account file is a valid python file containing variables. It is executed in a context containing all the Operation obejcts
+
+NAME = "Pfif's temp account"
+CURRENCY = 'PND'
+
+#The amount of money normally added at the end of a period
+REGULAR_INCOME = 1000
+
+OPERATIONS  = (
+    SavingOperation(200),
+    SavingRegularOperation(500, 10, 70),
+    DebtOperation(200, 2, False, 150)
+)

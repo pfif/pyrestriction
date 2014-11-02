@@ -1,0 +1,2 @@
+class NoNextOperation(Exception):
+    pass
