@@ -1,13 +1,14 @@
 from pyrestriction.exceptions import NoNextOperation
-#This file define the model of the application : the bank account and the various operations that are on going on it.
+# This file defines the model of the application: the bank account and the
+# various operations that are on going on it.
 
 class AccountPeriodMixin:
     """
-    This mixin compute these numbers for a period :
+    This mixin compute these numbers for a period:
     - The amount of money on it
     - The amount of money avaliable to the user
-    - The amount of money saved this month : money unavaliable to the user but kept on the account at the end of the month
-    - The amount of debt : money unavaliable to the user and that is taken away from the account at the end of the period
+    - The amount of money saved this month: money unavaliable to the user but kept on the account at the end of the month
+    - The amount of debt: money unavaliable to the user and that is taken away from the account at the end of the period
 
     Its money_begining_period, regular_income, name, and currency properties must be implemented by each of its subclasses
 
@@ -124,17 +125,17 @@ class SavingOperation(Operation):
     def next(self):
         raise NoNextOperation()
 
-class SavingRegularOperation(Operation):
+class RegularSavingOperation(Operation):
     """Save an amount of money over several periods"""
     def __init__(self, total_amount, nb_period_left, saved_amount):
-        super(SavingRegularOperation, self).__init__((total_amount-saved_amount)/nb_period_left)
+        super(RegularSavingOperation, self).__init__((total_amount-saved_amount)/nb_period_left)
         self._total_amount = total_amount
         self._nb_period_left = nb_period_left
         self._saved_amount = saved_amount
 
     def next(self):
         if self._nb_period_left - 1 > 1 : 
-            return SavingRegularOperation(self._total_amount, self._nb_period_left - 1, self._saved_amount + self.amount)
+            return RegularSavingOperation(self._total_amount, self._nb_period_left - 1, self._saved_amount + self.amount)
         else:
             raise NoNextOperation()
 
@@ -155,10 +156,10 @@ class DebtOperation(Operation):
             raise NoNextOperation()
 
 class RegularPaymentOperation(Operation):
-      """Pay the same amount every month"""
-      def __init__(self, amount, payed_this_month):
+      """Pay the same amount every period"""
+      def __init__(self, amount, payed_this_period):
           super(RegularPaymentOperation, self).__init__(amount, True)
-          if payed_this_month:
+          if payed_this_period:
               self._amount = 0
           self._regular_amount = amount
 

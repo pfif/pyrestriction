@@ -12,5 +12,6 @@ setup(
             'pyrestriction = pyrestriction.parser:parse'
         ]
     },
+    test_suite = "tests"
 )
 

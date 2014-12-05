@@ -9,6 +9,6 @@ REGULAR_INCOME = 1000
 
 OPERATIONS  = (
     SavingOperation(200),
-    SavingRegularOperation(500, 10, 70),
+    RegularSavingOperation(500, 10, 70),
     DebtOperation(200, 2, False, 150)
 )
