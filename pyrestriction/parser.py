@@ -1,5 +1,5 @@
 import argparse 
-from pyrestriction.model import Account, SavingOperation, SavingRegularOperation, DebtOperation, RegularPaymentOperation
+from pyrestriction.model import Account, SavingOperation, RegularSavingOperation, DebtOperation, RegularPaymentOperation
 from pyrestriction.views import CLIView
 
 AMOUNT_ARG = "amount_on_account"
@@ -7,7 +7,7 @@ ACCOUNT_ARG = "account_file"
 
 def parse_account(current_amount, account_string):
     """Parse an account from an ACT file. The ACT file must contain four variables : NAME, REGULAR_INCOME, CURRENCY, OPERATIONS"""
-    glob = {'SavingOperation':SavingOperation, 'SavingRegularOperation':SavingRegularOperation, 'DebtOperation':DebtOperation, 'RegularPaymentOperation':RegularPaymentOperation}
+    glob = {'SavingOperation':SavingOperation, 'RegularSavingOperation':RegularSavingOperation, 'DebtOperation':DebtOperation, 'RegularPaymentOperation':RegularPaymentOperation}
     loc = dict()
     exec(account_string, glob, loc)
     account = Account(current_amount, loc['REGULAR_INCOME'], loc['NAME'], loc['CURRENCY'])

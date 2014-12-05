@@ -159,23 +159,23 @@ class RegularPaymentOperationTest(unittest.TestCase):
         self.assertEqual(next_instance.amount, self.AMOUNT)
         self.assertTrue(next_instance.debt)
 
-class SavingRegularOperationTest(unittest.TestCase):
+class RegularSavingOperationTest(unittest.TestCase):
     TOTAL_AMOUNT = 5000
     NB_PERIOD_LEFT = 5
     ALREADY_SAVED = 656
     def setUp(self):
-        self._instance = SavingRegularOperation(self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT, self.ALREADY_SAVED)
+        self._instance = RegularSavingOperation(self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT, self.ALREADY_SAVED)
     
     def compute_current_amount(self):
         return (self.TOTAL_AMOUNT-self.ALREADY_SAVED)/self.NB_PERIOD_LEFT 
 
     def test_amountscurrent(self):
-        """Test that this ain't a debt and that the amount are correctly divided"""
+        """Test that this isn't a debt and that the amount are correctly divided"""
         self.assertFalse(self._instance.debt)
         self.assertEqual(self._instance.amount, self.compute_current_amount())
 
     def test_amountsnext(self):
-        """Test that this ain't a debt and that the amount is the same"""
+        """Test that this isn't a debt and that the amount is the same"""
         next_instance = self._instance.next()
         self.assertFalse(next_instance.debt)
         self.assertEqual(next_instance.amount, (self.TOTAL_AMOUNT-(self.ALREADY_SAVED+self.compute_current_amount()))/(self.NB_PERIOD_LEFT-1))
