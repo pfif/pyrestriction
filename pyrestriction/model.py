@@ -128,16 +128,16 @@ class SavingOperation(Operation):
 class RegularSavingOperation(Operation):
     """Save an amount of money over several periods"""
     def __init__(self, total_amount, nb_period_left, saved_amount):
-        super(RegularSavingOperation, self).__init__((total_amount-saved_amount)/nb_period_left)
         self._total_amount = total_amount
         self._nb_period_left = nb_period_left
-        self._saved_amount = saved_amount
+
+        saved_this_period = 0
+        if self._nb_period_left >= 1 :
+            saved_this_period = (total_amount-saved_amount)/self._nb_period_left
+        super(RegularSavingOperation, self).__init__(saved_amount + saved_this_period)
 
     def next(self):
-        if self._nb_period_left - 1 > 1 : 
-            return RegularSavingOperation(self._total_amount, self._nb_period_left - 1, self._saved_amount + self.amount)
-        else:
-            raise NoNextOperation()
+        return RegularSavingOperation(self._total_amount, self._nb_period_left-1, self.amount)
 
 class DebtOperation(Operation):
     """Pay a debt over a number of period"""

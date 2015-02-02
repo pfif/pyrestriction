@@ -167,7 +167,7 @@ class RegularSavingOperationTest(unittest.TestCase):
         self._instance = RegularSavingOperation(self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT, self.ALREADY_SAVED)
     
     def compute_current_amount(self):
-        return (self.TOTAL_AMOUNT-self.ALREADY_SAVED)/self.NB_PERIOD_LEFT 
+        return self.ALREADY_SAVED + (self.TOTAL_AMOUNT-self.ALREADY_SAVED)/self.NB_PERIOD_LEFT 
 
     def test_amountscurrent(self):
         """Test that this isn't a debt and that the amount are correctly divided"""
@@ -178,4 +178,12 @@ class RegularSavingOperationTest(unittest.TestCase):
         """Test that this isn't a debt and that the amount is the same"""
         next_instance = self._instance.next()
         self.assertFalse(next_instance.debt)
-        self.assertEqual(next_instance.amount, (self.TOTAL_AMOUNT-(self.ALREADY_SAVED+self.compute_current_amount()))/(self.NB_PERIOD_LEFT-1))
+        self.assertEqual(next_instance.amount, self.compute_current_amount()+(self.TOTAL_AMOUNT-(self.compute_current_amount()))/(self.NB_PERIOD_LEFT-1))
+    def test_amountszeroperiodleft(self):
+        """Test that the amount is fully saved at the end of the operation and beyond"""
+        def test_equal_totalamount(amount):
+            self.assertEqual(amount, self.TOTAL_AMOUNT)
+            
+        zeroperiodleft_instance = self._instance.next().next().next().next().next()
+        test_equal_totalamount(zeroperiodleft_instance.amount)
+        test_equal_totalamount(zeroperiodleft_instance.next().amount)
