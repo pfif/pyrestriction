@@ -2,11 +2,15 @@ import unittest
 from pyrestriction.model import *
 
 class OperationWithNext(Operation):
-    def __init__(self, amount, debt):
+    def __init__(self, amount, debt, counter=0):
         super(OperationWithNext, self).__init__(amount, debt)
+        self.counter = counter
     
     def next(self):
-        raise NoNextOperation()
+        if self.counter < 1:
+            return OperationWithNext(self.amount, self.debt, self.counter + 1) 
+        else:
+            raise NoNextOperation()
 
 class AccountPeriodMixinTest(unittest.TestCase):
     """
@@ -56,8 +60,19 @@ class AccountPeriodMixinTest(unittest.TestCase):
         self.assertEqual(self.AMOUNT_ON_ACCOUNT - (sum(x for x in self.OPERATIONS_SAVED) + sum(x for x in self.OPERATIONS_DEBT)), self._instance.avaliable())
     
     def test_next(self):
-        """Only test that a AccountPeriod is returned"""
-        self.assertEqual(type(self._instance.next()), AccountPeriod)
+        """Test that a AccountPeriod is returned, that all the operations have their counter raised, then that no operation is returned"""
+        def test_operations_counter(account, counter_nb):
+            for op in account.operations:
+                self.assertEqual(op.counter, counter_nb) 
+
+        test_operations_counter(self._instance, 0)
+
+        next_instance = self._instance.next()
+        self.assertEqual(type(next_instance), AccountPeriod)
+        test_operations_counter(next_instance, 1)
+        
+        last_instance = next_instance.next()
+        self.assertEqual(len(last_instance.operations), 0)
 
 class AccountPeriodTest(unittest.TestCase):
     def setUp(self):
