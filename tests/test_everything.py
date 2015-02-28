@@ -131,6 +131,12 @@ class DebtOperationTest(unittest.TestCase):
         self.assertTrue(next_instance.debt)
         self.assertEqual((self.TOTAL_AMOUNT-(self.AMOUNT_ALREADY_PAYED+self.compute_current_amount()))/(self.NB_PERIOD_LEFT-1), next_instance.amount)
 
+    def test_raisenonextoperation(self):
+        """Test that when the debt is payed, no Operation are yield"""
+        last_instance = self._instance.next().next().next().next()
+        with self.assertRaises(NoNextOperation):
+            last_instance.next() 
+
 class RegularPaymentOperationTest(unittest.TestCase):
     AMOUNT = 100
     

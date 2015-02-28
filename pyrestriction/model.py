@@ -157,7 +157,7 @@ class DebtOperation(Operation):
         self._payed_amount = payed_amount
 
     def next(self):
-        if self._nb_period_left - 1 > 1 : 
+        if self._nb_period_left - 1 >= 1 : 
             return DebtOperation(self._total_amount, self._nb_period_left - 1, False, self._payed_amount + self.amount)
         else:
             raise NoNextOperation()
