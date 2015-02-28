@@ -17,8 +17,11 @@ class AccountPeriodMixin:
 
     It is in charge to generate, if it can, the AccountPeriod for the next period
     """
-    def __init__(self):
-       self._operations = list()
+    def __init__(self, operations=None):
+        if operations == None:
+            self._operations = list()
+        else:
+            self._operations = operations
 
     def  _add_amounts(self, debt):
         result = 0
@@ -50,14 +53,17 @@ class AccountPeriodMixin:
 
         return AccountPeriod(self, next_operations)
 
+    @property
+    def operations(self):
+        return self._operations
+
 
 class AccountPeriod(AccountPeriodMixin):
     """
     This account period retrieve
     """
     def __init__(self, previous_accountperiod, operations):
-        super(AccountPeriod, self).__init__()
-        self._operations = operations
+        super(AccountPeriod, self).__init__(operations)
         self._previous_accountperiod = previous_accountperiod
 
     @property
@@ -94,7 +100,7 @@ class Account(AccountPeriodMixin):
 
     #Operation handling part
     def add_operation(self, operation):
-        self._operations.append(operation)
+        self.operations.append(operation)
         
 
 class Operation:
@@ -142,9 +148,10 @@ class RegularSavingOperation(Operation):
 class DebtOperation(Operation):
     """Pay a debt over a number of period"""
     def __init__(self, total_amount, nb_period_left, payed_this_period, payed_amount):
-        super(DebtOperation, self).__init__((total_amount-payed_amount)/nb_period_left, True)
-        if payed_this_period:
-            self._amount = 0
+        if not payed_this_period:
+            super(DebtOperation, self).__init__((total_amount-payed_amount)/nb_period_left, True)
+        else :
+            super(DebtOperation, self).__init__(0, True)
         self._total_amount = total_amount
         self._nb_period_left = nb_period_left
         self._payed_amount = payed_amount
@@ -158,9 +165,10 @@ class DebtOperation(Operation):
 class RegularPaymentOperation(Operation):
       """Pay the same amount every period"""
       def __init__(self, amount, payed_this_period):
-          super(RegularPaymentOperation, self).__init__(amount, True)
-          if payed_this_period:
-              self._amount = 0
+          if not payed_this_period:
+              super(RegularPaymentOperation, self).__init__(amount, True)
+          else:
+              super(RegularPaymentOperation, self).__init__(0, True)
           self._regular_amount = amount
 
       def next(self):
