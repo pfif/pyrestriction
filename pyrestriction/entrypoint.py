@@ -30,3 +30,6 @@ def entrypoint():
         args.func(dict_args)
     except AttributeError:
         argparser.print_help()
+
+if __name__ == "__main__":
+    entrypoint()
