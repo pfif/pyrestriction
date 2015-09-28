@@ -94,7 +94,7 @@ Run the program
 To run the program, you must provide two arguments to the program:
 
 ```
-pyrestriction amount_on_account path_to_account_file
+pyrestriction available amount_on_account path_to_account_file
 ```
 
 `amount_on_account` is the total amount of money in your account.
