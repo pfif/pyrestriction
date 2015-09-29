@@ -10,3 +10,14 @@ def parse_account(current_amount, account_string):
         account.add_operation(operation)
 
     return account
+
+def write_account(account, buffer):
+    variable = lambda name, value: "{name} = {value}".format(name=name, value=value)
+    variable_string = lambda name, value: variable(name, '"{value}"'.format(value=value))
+    print(variable("REGULAR_INCOME", account.regular_income), file=buffer)
+    print(variable_string("NAME", account.name), file=buffer)
+    print(variable_string("CURRENCY", account.currency), file=buffer)
+    print("", file=buffer)
+    print(variable("OPERATIONS", "[{operations}]".format(
+        operations = ",\n".join(o.__repr__() for o in account.operations)
+    )), file=buffer)

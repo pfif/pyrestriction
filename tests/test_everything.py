@@ -1,14 +1,16 @@
 import unittest
 from pyrestriction.model import *
+from pyrestriction.io import write_account
+from io import StringIO
 
 class OperationWithNext(Operation):
     def __init__(self, amount, debt, counter=0):
         super(OperationWithNext, self).__init__(amount, debt)
-        self.counter = counter
+        self._counter = counter
     
     def next(self):
-        if self.counter < 1:
-            return OperationWithNext(self.amount, self.debt, self.counter + 1) 
+        if self._counter < 1:
+            return OperationWithNext(self.amount, self.debt, self._counter + 1) 
         else:
             raise NoNextOperation()
 
@@ -58,7 +60,7 @@ class AccountTestBase:
         """Test that a AccountPeriod is returned, that all the operations have their counter raised, then that no operation is returned"""
         def test_operations_counter(account, counter_nb):
             for op in account.operations:
-                self.assertEqual(op.counter, counter_nb) 
+                self.assertEqual(op._counter, counter_nb) 
 
         test_operations_counter(self._instance, 0)
 
@@ -173,6 +175,15 @@ class SavingOperationTest(unittest.TestCase):
         """Test that this raise a NoNextOperation exception"""
         with self.assertRaises(NoNextOperation):
             self._instance.next()
+
+    def test_repr(self):
+        """Test that the representation value is correct and allows the object to be recreated when executed"""
+        self.assertEqual(
+            self._instance.__repr__(),
+            "SavingOperation(amount = {AMOUNT_SAVING})".format(
+                AMOUNT_SAVING=self.AMOUNT_SAVING
+            )
+        )
     
 class DebtOperationTest(unittest.TestCase):
     TOTAL_AMOUNT = 500
@@ -212,6 +223,19 @@ class DebtOperationTest(unittest.TestCase):
         with self.assertRaises(NoNextOperation):
             last_instance.next() 
 
+    def test_repr(self):
+        """Test that the representation value is correct and allows the object to be recreated when executed"""
+        self.assertEqual(
+            self._instance.__repr__(),
+            "DebtOperation(total_amount = {TOTAL_AMOUNT}, nb_period_left = {NB_PERIOD_LEFT}, payed_this_period = {payed}, payed_amount = {AMOUNT_ALREADY_PAYED})".format(
+                TOTAL_AMOUNT=self.TOTAL_AMOUNT, 
+                NB_PERIOD_LEFT = self.NB_PERIOD_LEFT,
+                payed=self._payed, 
+                AMOUNT_ALREADY_PAYED=self.AMOUNT_ALREADY_PAYED
+            )
+        )
+        
+
 class RegularPaymentOperationTest(unittest.TestCase):
     AMOUNT = 100
     
@@ -239,6 +263,17 @@ class RegularPaymentOperationTest(unittest.TestCase):
         next_instance = self._instance.next()
         self.assertEqual(next_instance.amount, self.AMOUNT)
         self.assertTrue(next_instance.debt)
+
+    def test_repr(self):
+        """Test that the representation value is correct and allows the object to be recreated when executed"""
+        self.assertEqual(
+            self._instance.__repr__(),
+            "RegularPaymentOperation(regular_amount = {AMOUNT}, payed_this_period = {payed})".format(
+                AMOUNT=self.AMOUNT, 
+                payed=self._payed, 
+            )
+        )
+        
 
 class RegularSavingOperationTest(unittest.TestCase):
     TOTAL_AMOUNT = 5000
@@ -268,3 +303,39 @@ class RegularSavingOperationTest(unittest.TestCase):
         zeroperiodleft_instance = self._instance.next().next().next().next().next()
         test_equal_totalamount(zeroperiodleft_instance.amount)
         test_equal_totalamount(zeroperiodleft_instance.next().amount)
+    
+    def test_repr(self):
+        """Test that the representation value is correct and allows the object to be recreated when executed"""
+        self.assertEqual(
+            self._instance.__repr__(),
+            "RegularSavingOperation(total_amount = {TOTAL_AMOUNT}, nb_period_left = {NB_PERIOD_LEFT}, saved_amount = {ALREADY_SAVED})".format(
+                TOTAL_AMOUNT=self.TOTAL_AMOUNT, 
+                NB_PERIOD_LEFT = self.NB_PERIOD_LEFT, 
+                ALREADY_SAVED = self.ALREADY_SAVED
+            )
+        )
+
+class WriteAccountTest(unittest.TestCase):
+    REGULAR_INCOME = 1000
+    NAME = "Write account test"
+    CURRENCY = "EUR"
+
+    OPERATION_AMOUNT = 500
+
+    def setUp(self):
+        self._account = Account(1000, self.REGULAR_INCOME, self.NAME, self.CURRENCY)
+        self._account.add_operation(OperationWithNext(self.OPERATION_AMOUNT, True))
+        self._account.add_operation(OperationWithNext(self.OPERATION_AMOUNT, False))
+
+    def test_formataccount(self):
+        formated_account = StringIO() 
+        write_account(self._account, formated_account)
+        self.assertEqual(
+            formated_account.getvalue(),
+            'REGULAR_INCOME = {REGULAR_INCOME}\nNAME = "{NAME}"\nCURRENCY = "{CURRENCY}"\n\nOPERATIONS = [OperationWithNext(amount = {AMOUNT}, debt = True, counter = 0),\nOperationWithNext(amount = {AMOUNT}, debt = False, counter = 0)]\n'.format(
+                REGULAR_INCOME = self.REGULAR_INCOME,
+                NAME = self.NAME,
+                CURRENCY = self.CURRENCY,
+                AMOUNT = self.OPERATION_AMOUNT
+            )
+        )
