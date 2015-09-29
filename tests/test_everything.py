@@ -12,9 +12,22 @@ class OperationWithNext(Operation):
         else:
             raise NoNextOperation()
 
-class AccountPeriodMixinTest(unittest.TestCase):
+# TEST FOR THE CLASSES DERIVED FROM AccountPeriodMixin
+#
+# There are two classes derived from AccountPeriodMixin (Account and AccountPeriod), 
+# and those two can be in two modes (Normal and OperationOnly)
+#
+# To test this, for each classes, we create 3 test case
+# - 1 test case for the functions that work the same way for both mode
+# - 1 test case to test specific behabior in Normal mode
+#
+# One last test case is created to test specific behavior on OperationOnly mode for both classes 
+#
+# All of these classes derives from unittest.TestCase and AccountTestBase
+
+class AccountTestBase:
     """
-    This test case test the class Account that is derived from AccountPeriodMixin!
+    Base set up for testing the classes derived from AccountPeriodMixin
     """
 
     AMOUNT_ON_ACCOUNT = 10000
@@ -25,40 +38,22 @@ class AccountPeriodMixinTest(unittest.TestCase):
     OPERATIONS_SAVED = [500, 1000]
     OPERATIONS_DEBT = [505, 253]
 
-    @staticmethod
-    def create_instance():
-        instance = Account(AccountPeriodMixinTest.AMOUNT_ON_ACCOUNT , AccountPeriodMixinTest.REGULAR_INCOME, AccountPeriodMixinTest.ACCOUNT_NAME, AccountPeriodMixinTest.ACCOUNT_CURRENCY)
-        for op_value in AccountPeriodMixinTest.OPERATIONS_SAVED:
+    def create_instance(self, amount_on_account):
+        instance = Account(amount_on_account, self.REGULAR_INCOME, self.ACCOUNT_NAME, self.ACCOUNT_CURRENCY)
+        for op_value in self.OPERATIONS_SAVED:
             instance.add_operation(OperationWithNext(op_value, False))
-        for op_value in AccountPeriodMixinTest.OPERATIONS_DEBT:
+        for op_value in self.OPERATIONS_DEBT:
             instance.add_operation(OperationWithNext(op_value, True))
              
         return instance
 
-    def setUp(self):
-        self._instance = self.create_instance()
-  
-    def tearDown(self):
-        pass
+    def setUp_account(self, amount_on_account):
+        self._instance = self.create_instance(amount_on_account)
+ 
+    def setUp_accountperiod(self, amount_on_account):
+        self._instance_prev = self.create_instance(amount_on_account)
+        self._instance = AccountPeriod(self._instance_prev, [OperationWithNext(500, False)])
 
-    def test_total(self):
-        """Return the amount of money avaliable at the begining of the month"""
-        self.assertEqual(self.AMOUNT_ON_ACCOUNT, self._instance.total())
-  
-    def test_saved(self):
-        """Test that saved() return the right amount of saved money"""
-        self.assertEqual(sum(x for x in self.OPERATIONS_SAVED), self._instance.saved())
-  
-    def test_debt(self):
-        """Test that debt() return the right amount of debt money"""
-        self.assertEqual(sum(x for x in self.OPERATIONS_DEBT), self._instance.debt())
-  
-    def test_avaliable(self):
-        """Test that avaliable() return the right amount of money avaliable to the user :
-        total-(saved+debt)
-        """
-        self.assertEqual(self.AMOUNT_ON_ACCOUNT - (sum(x for x in self.OPERATIONS_SAVED) + sum(x for x in self.OPERATIONS_DEBT)), self._instance.avaliable())
-    
     def test_next(self):
         """Test that a AccountPeriod is returned, that all the operations have their counter raised, then that no operation is returned"""
         def test_operations_counter(account, counter_nb):
@@ -74,29 +69,94 @@ class AccountPeriodMixinTest(unittest.TestCase):
         last_instance = next_instance.next()
         self.assertEqual(len(last_instance.operations), 0)
 
-class AccountPeriodTest(unittest.TestCase):
-    def setUp(self):
-        self._instance_prev = AccountPeriodMixinTest.create_instance()
-        self._instance = AccountPeriod(self._instance_prev, [OperationWithNext(500, False)])
-  
-    def tearDown(self):
-        pass
+class TestBothModeMixin:
+    """Add this mixin to a class that test a subclass of AccountPeriodMixin to make it run its tests twice. Once in OperationOnly mode and once in Normal mode"""
+    def run(self, *args, **kwargs):
+        self._amount_on_account = None
+        super(TestBothModeMixin, self).run(*args, **kwargs)
 
-    def test_money_begining_period(self):
-        """Test that : the money begining period is rightly computed based on the previous AccountPeriod"""
-        self.assertEqual(AccountPeriodMixinTest.AMOUNT_ON_ACCOUNT  - sum(x for x in AccountPeriodMixinTest.OPERATIONS_DEBT) + AccountPeriodMixinTest.REGULAR_INCOME, self._instance.money_begining_period)
+        self._setupfunction = self.AMOUNT_ON_ACCOUNT
+        super(TestBothModeMixin, self).run(*args, **kwargs)
+
+class AccountTest(TestBothModeMixin, unittest.TestCase, AccountTestBase):
+    """Test Account and AccountPeriodMixin in both mode"""
+    def setUp(self):
+        self.setUp_account(self._amount_on_account)
+  
+    def test_saved(self):
+        """Test that saved() return the right amount of saved money"""
+        self.assertEqual(sum(x for x in self.OPERATIONS_SAVED), self._instance.saved())
+  
+    def test_debt(self):
+        """Test that debt() return the right amount of debt money"""
+        self.assertEqual(sum(x for x in self.OPERATIONS_DEBT), self._instance.debt())
+  
+class AccountNormalModeTest(unittest.TestCase, AccountTestBase):
+    """Test Account and AccountPeriodMixin in Normal mode only"""
+    def setUp(self):
+        self.setUp_account(self.AMOUNT_ON_ACCOUNT)
+    
+    def test_total(self): 
+        """Return the amount of money avaliable at the begining of the month"""
+        self.assertEqual(self.AMOUNT_ON_ACCOUNT, self._instance.total())
+
+    def test_avaliable(self):
+        """Test that avaliable() return the right amount of money avaliable to the user :
+        total-(saved+debt)
+        """
+        self.assertEqual(self.AMOUNT_ON_ACCOUNT - (sum(x for x in self.OPERATIONS_SAVED) + sum(x for x in self.OPERATIONS_DEBT)), self._instance.avaliable())
+
+class AccountPeriodTest(TestBothModeMixin, unittest.TestCase, AccountTestBase):
+    """Test AccountPeriod in both mode"""
+    def setUp(self):
+        self.setUp_accountperiod(self._amount_on_account) 
 
     def test_regular_income(self):
-        """Test that the regular income is taken from the previous AccountPerdiod"""
-        self.assertEqual(AccountPeriodMixinTest.REGULAR_INCOME, self._instance.regular_income)
+        """Test that the regular income is taken from the previous AccountPeriod"""
+        self.assertEqual(self.REGULAR_INCOME, self._instance.regular_income)
 
     def test_name(self):
         """Test that the name is taken from the previous AccountPeriod"""
-        self.assertEqual(AccountPeriodMixinTest.ACCOUNT_NAME, self._instance.name)
+        self.assertEqual(self.ACCOUNT_NAME, self._instance.name)
 
     def test_currency(self):
         """Test that the currency is taken from the previous AccountPeriod"""
-        self.assertEqual(AccountPeriodMixinTest.ACCOUNT_CURRENCY, self._instance.currency)
+        self.assertEqual(self.ACCOUNT_CURRENCY, self._instance.currency)
+
+class AccountPeriodNormalModeTest(unittest.TestCase, AccountTestBase):
+    """Test AccountPeriod in Normal mode only"""
+    def setUp(self):
+        self.setUp_accountperiod(self.AMOUNT_ON_ACCOUNT)
+
+    def test_money_begining_period(self):
+        """Test that : the money begining period is rightly computed based on the previous AccountPeriod"""
+        self.assertEqual(self.AMOUNT_ON_ACCOUNT  - sum(x for x in self.OPERATIONS_DEBT) + self.REGULAR_INCOME, self._instance.money_begining_period)
+    
+
+class AccountOperationsOnlyModeTest(unittest.TestCase, AccountTestBase):
+    """Test Account and AccountPeriod in OperationOnly mode :
+       The objects have not been made aware of how much money is on the account and only serve as a container for the remaining data."""
+
+    def run(self, *args, **kwargs):
+        self._setupfunction = "setUp_account"
+        super(AccountOperationsOnlyModeTest, self).run(*args, **kwargs)
+
+        self._setupfunction = "setUp_accountperiod"
+        super(AccountOperationsOnlyModeTest, self).run(*args, **kwargs)
+
+    def setUp(self):
+        self.__getattribute__(self._setupfunction)(None)
+
+    def test_total(self):
+        """Calculation is impossible due to missing data, OperationOnlyMode exception is raised"""
+        with self.assertRaises(OperationsOnlyMode):
+            self._instance.total()
+  
+    def test_avaliable(self):
+        """Calculation is impossible due to missing data, OperationOnlyMode exception is raised"""
+        with self.assertRaises(OperationsOnlyMode):
+            self._instance.avaliable()
+    
 
 class SavingOperationTest(unittest.TestCase):
     AMOUNT_SAVING = 100

@@ -1,4 +1,4 @@
-from pyrestriction.exceptions import NoNextOperation
+from pyrestriction.exceptions import NoNextOperation, OperationsOnlyMode
 # This file defines the model of the application: the bank account and the
 # various operations that are on going on it.
 
@@ -31,7 +31,10 @@ class AccountPeriodMixin:
         return result
  
     def total(self):
-        return self.money_begining_period
+        if self.money_begining_period:
+            return self.money_begining_period
+        else:
+            raise OperationsOnlyMode()
 
     def saved(self):
         return self._add_amounts(False)
