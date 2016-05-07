@@ -9,7 +9,7 @@ setup(
     packages = ["pyrestriction"],
     entry_points = {
         'console_scripts': [
-            'pyrestriction = pyrestriction.parser:parse'
+            'pyrestriction = pyrestriction.entrypoint:entrypoint'
         ]
     },
     test_suite = "tests"
