@@ -8,7 +8,10 @@ def _surround_separators(func):
         print(SEPARATOR)
     return function
         
-class CLIView(object):
+class AccountView(object):
+    
+    def __init__(self, accountperiod):
+        self._accountperiod = accountperiod
 
     @_surround_separators
     def _render_header_account(self, accountperiod):
@@ -19,7 +22,7 @@ class CLIView(object):
         #Print period number 
         print("Period : ", end = "")
         if(period_number == 0):
-            print ("Current")
+            print("Current")
         else:
             print(period_number)
 
@@ -32,11 +35,20 @@ class CLIView(object):
         print("Saved amount : {0}".format(accountperiod.saved()))
         print("Avaliable amount : {0}".format(accountperiod.avaliable()))
 
-    def render(self, accountperiod):
-        self._render_header_account(accountperiod)
+    def render(self):
+        self._render_header_account(self._accountperiod)
         
         for i in range(1,3):
-            self._render_period(i, accountperiod)
-            accountperiod = accountperiod.next()
+            self._render_period(i, self._accountperiod)
+            accountperiod = self._accountperiod.next()
 
+class MessageView():
+    messages = {"format": "Formated {filename}.", 
+                "endperiod": "All the operations on {account_name} have been passed to the next period and written to {filename}."} 
 
+    def __init__(self, key, format_arguments):
+        self._key = key
+        self._format_arguments = format_arguments
+
+    def render(self):
+        print(self.messages[self._key].format(**self._format_arguments))
