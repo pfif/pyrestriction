@@ -37,10 +37,11 @@ class AccountView(object):
 
     def render(self):
         self._render_header_account(self._accountperiod)
-        
-        for i in range(1,3):
-            self._render_period(i, self._accountperiod)
-            accountperiod = self._accountperiod.next()
+
+        accountperiod = self._accountperiod
+        for i in range(2):
+            self._render_period(i, accountperiod)
+            accountperiod = accountperiod.next()
 
 class MessageView():
     messages = {"format": "Formated {filename}.", 
