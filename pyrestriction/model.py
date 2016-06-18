@@ -4,6 +4,7 @@ from pyrestriction.exceptions import NoNextOperation, OperationsOnlyMode
 # This file defines the model of the application: the bank account and the
 # various operations that are on going on it.
 
+
 class AccountPeriodMixin:
     """
     This mixin compute these numbers for a period:
@@ -20,18 +21,18 @@ class AccountPeriodMixin:
     It is in charge to generate, if it can, the AccountPeriod for the next period
     """
     def __init__(self, operations=None):
-        if operations == None:
+        if operations is None:
             self._operations = list()
         else:
             self._operations = operations
 
-    def  _add_amounts(self, debt):
+    def _add_amounts(self, debt):
         result = 0
         for operation in self._operations:
             if operation.debt == debt:
                 result += operation.amount
         return result
- 
+
     def total(self):
         if self.money_begining_period:
             return self.money_begining_period
@@ -73,7 +74,7 @@ class AccountPeriod(AccountPeriodMixin):
 
     @property
     def money_begining_period(self):
-        return (self._previous_accountperiod.total() - self._previous_accountperiod.debt())+self.regular_income
+        return (self._previous_accountperiod.total() - self._previous_accountperiod.debt()) + self.regular_income
 
     @property
     def regular_income(self):
@@ -86,6 +87,7 @@ class AccountPeriod(AccountPeriodMixin):
     @property
     def currency(self):
         return self._previous_accountperiod.currency
+
 
 class Account(AccountPeriodMixin):
     """
@@ -103,10 +105,10 @@ class Account(AccountPeriodMixin):
         self.name = account_name
         self.currency = account_currency
 
-    #Operation handling part
+    # Operation handling part
     def add_operation(self, operation):
         self.operations.append(operation)
-        
+
 
 class Operation:
     """
@@ -120,7 +122,7 @@ class Operation:
     Its method "next" is responsible to create the Operation for the next period.
     If there is no next operation, it must raise NoNextOperation.
     """
-    def __init__(self, amount, debt = False):
+    def __init__(self, amount, debt=False):
         self._amount = amount
         self._debt = debt
 
@@ -135,13 +137,14 @@ class Operation:
     def __repr__(self):
         constructor_parameters = list(signature(self.__class__.__init__).parameters)
         constructor_parameters.pop(0)
-        textual_argument = ["{p} = {a}".format(p = parameter, a = self.__getattribute__("_"+parameter))
+        textual_argument = ["{p}={a}".format(p=parameter, a=self.__getattribute__("_" + parameter))
                             for parameter in constructor_parameters]
         arguments = ", ".join(textual_argument)
 
         classname = self.__class__.__name__
 
         return "{classname}({arguments})".format(classname=classname, arguments=arguments)
+
 
 class SavingOperation(Operation):
     """Save money during one period"""
@@ -151,6 +154,7 @@ class SavingOperation(Operation):
     def next(self):
         raise NoNextOperation()
 
+
 class RegularSavingOperation(Operation):
     """Save an amount of money over several periods"""
     def __init__(self, total_amount, nb_period_left, saved_amount):
@@ -159,19 +163,20 @@ class RegularSavingOperation(Operation):
         self._saved_amount = saved_amount
 
         saved_this_period = 0
-        if self._nb_period_left >= 1 :
-            saved_this_period = (total_amount-saved_amount)/self._nb_period_left
+        if self._nb_period_left >= 1:
+            saved_this_period = (total_amount - saved_amount) / self._nb_period_left
         super(RegularSavingOperation, self).__init__(saved_amount + saved_this_period)
 
     def next(self):
-        return RegularSavingOperation(self._total_amount, self._nb_period_left-1, self.amount)
+        return RegularSavingOperation(self._total_amount, self._nb_period_left - 1, self.amount)
+
 
 class DebtOperation(Operation):
     """Pay a debt over a number of period"""
     def __init__(self, total_amount, nb_period_left, payed_this_period, payed_amount):
         if not payed_this_period:
-            super(DebtOperation, self).__init__((total_amount-payed_amount)/nb_period_left, True)
-        else :
+            super(DebtOperation, self).__init__((total_amount - payed_amount) / nb_period_left, True)
+        else:
             super(DebtOperation, self).__init__(0, True)
         self._total_amount = total_amount
         self._nb_period_left = nb_period_left
@@ -179,20 +184,21 @@ class DebtOperation(Operation):
         self._payed_amount = payed_amount
 
     def next(self):
-        if self._nb_period_left - 1 >= 1 : 
+        if self._nb_period_left - 1 >= 1:
             return DebtOperation(self._total_amount, self._nb_period_left - 1, False, self._payed_amount + self.amount)
         else:
             raise NoNextOperation()
 
-class RegularPaymentOperation(Operation):
-      """Pay the same amount every period"""
-      def __init__(self, regular_amount, payed_this_period):
-          if not payed_this_period:
-              super(RegularPaymentOperation, self).__init__(regular_amount, True)
-          else:
-              super(RegularPaymentOperation, self).__init__(0, True)
-          self._regular_amount = regular_amount
-          self._payed_this_period = payed_this_period
 
-      def next(self):
-          return RegularPaymentOperation(self._regular_amount, False)
+class RegularPaymentOperation(Operation):
+    """Pay the same amount every period"""
+    def __init__(self, regular_amount, payed_this_period):
+        if not payed_this_period:
+            super(RegularPaymentOperation, self).__init__(regular_amount, True)
+        else:
+            super(RegularPaymentOperation, self).__init__(0, True)
+        self._regular_amount = regular_amount
+        self._payed_this_period = payed_this_period
+
+    def next(self):
+        return RegularPaymentOperation(self._regular_amount, False)
