@@ -141,6 +141,16 @@ class Operation:
     def purpose(self):
         return self._purpose
 
+    def __str__(self):
+        information = "{} - {} : {}".format(self.__class__.__name__,
+                                            self.purpose,
+                                            self.amount)
+
+        if hasattr(self, "additional_textual_informations"):
+            information += " ({})".format(self.additional_textual_informations)
+
+        return information
+
     def get_formatted_attribute(self, parameter):
         attribute = getattr(self, "_" + parameter)
         if isinstance(attribute, str):
@@ -181,6 +191,11 @@ class RegularSavingOperation(Operation):
             saved_this_period = (total_amount - saved_amount) / self._nb_period_left
         super(RegularSavingOperation, self).__init__(saved_amount + saved_this_period, purpose)
 
+    @property
+    def additional_textual_informations(self):
+        return "saved {} of {}, {} periods before completion".format(
+            self._saved_amount, self._total_amount, self._nb_period_left)
+
     def next(self):
         return RegularSavingOperation(self.purpose, self._total_amount, self._nb_period_left - 1, self.amount)
 
@@ -202,6 +217,11 @@ class DebtOperation(Operation):
         self._nb_period_left = nb_period_left
         self._payed_this_period = payed_this_period
         self._payed_amount = payed_amount
+
+    @property
+    def additional_textual_informations(self):
+        return "payed {} of {}, {} periods before completion".format(
+            self._payed_amount, self._total_amount, self._nb_period_left)
 
     def next(self):
         if self._nb_period_left - 1 >= 1:

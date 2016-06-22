@@ -210,6 +210,14 @@ class SavingOperationTest(unittest.TestCase, TestPurposeMixin):
             )
         )
 
+    def test_str(self):
+        self.assertEqual(
+            self._instance.__str__(),
+            "SavingOperation - {} : {}".format(
+                self.PURPOSE, self.AMOUNT_SAVING
+            )
+        )
+
 
 class DebtOperationTest(unittest.TestCase, TestPurposeMixin):
     TOTAL_AMOUNT = 500
@@ -262,6 +270,15 @@ class DebtOperationTest(unittest.TestCase, TestPurposeMixin):
             )
         )
 
+    def test_str(self):
+        self.assertEqual(
+            self._instance.__str__(),
+            "DebtOperation - {} : {} (payed {} of {}, {} periods before completion)".format(
+                self.PURPOSE, self.compute_current_amount(),
+                self.AMOUNT_ALREADY_PAYED, self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT
+            )
+        )
+
 
 class RegularPaymentOperationTest(unittest.TestCase, TestPurposeMixin):
     AMOUNT = 100
@@ -276,13 +293,13 @@ class RegularPaymentOperationTest(unittest.TestCase, TestPurposeMixin):
     def setUp(self):
         self._instance = RegularPaymentOperation(self.PURPOSE, self.AMOUNT, self._payed)
 
+    def compute_current_amount(self):
+        return 0 if self._payed else self.AMOUNT
+
     def test_amountscurrent(self):
         """Test that this is a debt and that the amount is correct, if it is a payed or unpayed amount"""
         self.assertTrue(self._instance.debt)
-        if(self._payed):
-            self.assertEqual(self._instance.amount, 0)
-        else:
-            self.assertEqual(self._instance.amount, self.AMOUNT)
+        self.assertEqual(self._instance.amount, self.compute_current_amount())
 
     def test_amountsnext(self):
         """Test that this is a debt and that the amount is the same"""
@@ -299,6 +316,13 @@ class RegularPaymentOperationTest(unittest.TestCase, TestPurposeMixin):
                 AMOUNT=self.AMOUNT,
                 payed=self._payed,
             )
+        )
+
+    def test_str(self):
+        self.assertEqual(
+            self._instance.__str__(),
+            "RegularPaymentOperation - {} : {}".format(
+                self.PURPOSE, self.compute_current_amount())
         )
 
 
@@ -344,6 +368,13 @@ class RegularSavingOperationTest(unittest.TestCase, TestPurposeMixin):
                 ALREADY_SAVED=self.ALREADY_SAVED
             )
         )
+
+    def test_str(self):
+        self.assertEqual(
+            self._instance.__str__(),
+            "RegularSavingOperation - {} : {} (saved {} of {}, {} periods before completion)".format(
+                self.PURPOSE, self.compute_current_amount(),
+                self.ALREADY_SAVED, self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT))
 
 
 class WriteAccountTest(unittest.TestCase):
