@@ -8,7 +8,7 @@ CURRENCY = 'PND'
 REGULAR_INCOME = 1000
 
 OPERATIONS  = (
-    SavingOperation(200),
-    RegularSavingOperation(500, 10, 70),
-    DebtOperation(200, 2, False, 150)
+    SavingOperation("Present to Grandma", 200),
+    RegularSavingOperation("Become rich", 500, 10, 70),
+    DebtOperation("Money owed to Grandma", 200, 2, False, 150)
 )

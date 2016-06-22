@@ -9,13 +9,13 @@ from io import StringIO
 
 
 class OperationWithNext(Operation):
-    def __init__(self, amount, debt, counter=0):
-        super(OperationWithNext, self).__init__(amount, debt)
+    def __init__(self, purpose, amount, debt, counter=0):
+        super(OperationWithNext, self).__init__(amount, purpose, debt)
         self._counter = counter
 
     def next(self):
         if self._counter < 1:
-            return OperationWithNext(self.amount, self.debt, self._counter + 1)
+            return OperationWithNext(self.purpose, self.amount, self.debt, self._counter + 1)
         else:
             raise NoNextOperation()
 
@@ -49,9 +49,9 @@ class AccountTestBase(object):
     def create_instance(self, amount_on_account):
         instance = Account(amount_on_account, self.REGULAR_INCOME, self.ACCOUNT_NAME, self.ACCOUNT_CURRENCY)
         for op_value in self.OPERATIONS_SAVED:
-            instance.add_operation(OperationWithNext(op_value, False))
+            instance.add_operation(OperationWithNext("undefined", op_value, False))
         for op_value in self.OPERATIONS_DEBT:
-            instance.add_operation(OperationWithNext(op_value, True))
+            instance.add_operation(OperationWithNext("undefined", op_value, True))
 
         return instance
 
@@ -60,7 +60,7 @@ class AccountTestBase(object):
 
     def setUp_accountperiod(self, amount_on_account):
         self._instance_prev = self.create_instance(amount_on_account)
-        self._instance = AccountPeriod(self._instance_prev, [OperationWithNext(500, False)])
+        self._instance = AccountPeriod(self._instance_prev, [OperationWithNext("undefined", 500, False)])
 
     def test_next(self):
         """Test that a AccountPeriod is returned, that all the operations have their counter raised, then that no operation is returned"""
@@ -171,11 +171,25 @@ class AccountOperationsOnlyModeTest(unittest.TestCase, AccountTestBase):
             self._instance.avaliable()
 
 
-class SavingOperationTest(unittest.TestCase):
+class TestPurposeMixin(object):
+    PURPOSE = 'Present to Kevin "Frank Underwood" Spacey.'
+    PURPOSE_ESCAPED = 'Present to Kevin \\"Frank Underwood\\" Spacey.'
+
+    def test_purpose(self):
+        self.assertEqual(self._instance.purpose, self.PURPOSE)
+        try:
+            next_op = self._instance.next()
+        except NoNextOperation:
+            pass
+        else:
+            self.assertEqual(next_op.purpose, self.PURPOSE)
+
+
+class SavingOperationTest(unittest.TestCase, TestPurposeMixin):
     AMOUNT_SAVING = 100
 
     def setUp(self):
-        self._instance = SavingOperation(self.AMOUNT_SAVING)
+        self._instance = SavingOperation(self.PURPOSE, self.AMOUNT_SAVING)
 
     def test_amountscurrent(self):
         """Test that this is not a debt and that the amount is correct"""
@@ -191,13 +205,13 @@ class SavingOperationTest(unittest.TestCase):
         """Test that the representation value is correct and allows the object to be recreated when executed"""
         self.assertEqual(
             self._instance.__repr__(),
-            "SavingOperation(amount={AMOUNT_SAVING})".format(
-                AMOUNT_SAVING=self.AMOUNT_SAVING
+            'SavingOperation(purpose="{}", amount={})'.format(
+                self.PURPOSE_ESCAPED, self.AMOUNT_SAVING
             )
         )
 
 
-class DebtOperationTest(unittest.TestCase):
+class DebtOperationTest(unittest.TestCase, TestPurposeMixin):
     TOTAL_AMOUNT = 500
     NB_PERIOD_LEFT = 5
     AMOUNT_ALREADY_PAYED = 58
@@ -210,7 +224,7 @@ class DebtOperationTest(unittest.TestCase):
         super(DebtOperationTest, self).run(*args, **kwargs)
 
     def setUp(self):
-        self._instance = DebtOperation(self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT, self._payed, self.AMOUNT_ALREADY_PAYED)
+        self._instance = DebtOperation(self.PURPOSE, self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT, self._payed, self.AMOUNT_ALREADY_PAYED)
 
     def compute_current_amount(self):
         if(self._payed):
@@ -239,7 +253,8 @@ class DebtOperationTest(unittest.TestCase):
         """Test that the representation value is correct and allows the object to be recreated when executed"""
         self.assertEqual(
             self._instance.__repr__(),
-            "DebtOperation(total_amount={TOTAL_AMOUNT}, nb_period_left={NB_PERIOD_LEFT}, payed_this_period={payed}, payed_amount={AMOUNT_ALREADY_PAYED})".format(
+            'DebtOperation(purpose="{purpose}", total_amount={TOTAL_AMOUNT}, nb_period_left={NB_PERIOD_LEFT}, payed_this_period={payed}, payed_amount={AMOUNT_ALREADY_PAYED})'.format(
+                purpose=self.PURPOSE_ESCAPED,
                 TOTAL_AMOUNT=self.TOTAL_AMOUNT,
                 NB_PERIOD_LEFT=self.NB_PERIOD_LEFT,
                 payed=self._payed,
@@ -248,7 +263,7 @@ class DebtOperationTest(unittest.TestCase):
         )
 
 
-class RegularPaymentOperationTest(unittest.TestCase):
+class RegularPaymentOperationTest(unittest.TestCase, TestPurposeMixin):
     AMOUNT = 100
 
     def run(self, *args, **kwargs):
@@ -259,7 +274,7 @@ class RegularPaymentOperationTest(unittest.TestCase):
         super(RegularPaymentOperationTest, self).run(*args, **kwargs)
 
     def setUp(self):
-        self._instance = RegularPaymentOperation(self.AMOUNT, self._payed)
+        self._instance = RegularPaymentOperation(self.PURPOSE, self.AMOUNT, self._payed)
 
     def test_amountscurrent(self):
         """Test that this is a debt and that the amount is correct, if it is a payed or unpayed amount"""
@@ -279,20 +294,21 @@ class RegularPaymentOperationTest(unittest.TestCase):
         """Test that the representation value is correct and allows the object to be recreated when executed"""
         self.assertEqual(
             self._instance.__repr__(),
-            "RegularPaymentOperation(regular_amount={AMOUNT}, payed_this_period={payed})".format(
+            'RegularPaymentOperation(purpose="{purpose}", regular_amount={AMOUNT}, payed_this_period={payed})'.format(
+                purpose=self.PURPOSE_ESCAPED,
                 AMOUNT=self.AMOUNT,
                 payed=self._payed,
             )
         )
 
 
-class RegularSavingOperationTest(unittest.TestCase):
+class RegularSavingOperationTest(unittest.TestCase, TestPurposeMixin):
     TOTAL_AMOUNT = 5000
     NB_PERIOD_LEFT = 5
     ALREADY_SAVED = 656
 
     def setUp(self):
-        self._instance = RegularSavingOperation(self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT, self.ALREADY_SAVED)
+        self._instance = RegularSavingOperation(self.PURPOSE, self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT, self.ALREADY_SAVED)
 
     def compute_current_amount(self):
         return self.ALREADY_SAVED + (self.TOTAL_AMOUNT - self.ALREADY_SAVED) / self.NB_PERIOD_LEFT
@@ -321,7 +337,8 @@ class RegularSavingOperationTest(unittest.TestCase):
         """Test that the representation value is correct and allows the object to be recreated when executed"""
         self.assertEqual(
             self._instance.__repr__(),
-            "RegularSavingOperation(total_amount={TOTAL_AMOUNT}, nb_period_left={NB_PERIOD_LEFT}, saved_amount={ALREADY_SAVED})".format(
+            'RegularSavingOperation(purpose="{PURPOSE}", total_amount={TOTAL_AMOUNT}, nb_period_left={NB_PERIOD_LEFT}, saved_amount={ALREADY_SAVED})'.format(
+                PURPOSE=self.PURPOSE_ESCAPED,
                 TOTAL_AMOUNT=self.TOTAL_AMOUNT,
                 NB_PERIOD_LEFT=self.NB_PERIOD_LEFT,
                 ALREADY_SAVED=self.ALREADY_SAVED
@@ -338,15 +355,15 @@ class WriteAccountTest(unittest.TestCase):
 
     def setUp(self):
         self._account = Account(1000, self.REGULAR_INCOME, self.NAME, self.CURRENCY)
-        self._account.add_operation(OperationWithNext(self.OPERATION_AMOUNT, True))
-        self._account.add_operation(OperationWithNext(self.OPERATION_AMOUNT, False))
+        self._account.add_operation(OperationWithNext("Undefined", self.OPERATION_AMOUNT, True))
+        self._account.add_operation(OperationWithNext("Undefined", self.OPERATION_AMOUNT, False))
 
     def test_formataccount(self):
         formated_account = StringIO()
         write_account(self._account, formated_account)
         self.assertEqual(
             formated_account.getvalue(),
-            'REGULAR_INCOME = {REGULAR_INCOME}\nNAME = "{NAME}"\nCURRENCY = "{CURRENCY}"\n\nOPERATIONS = [OperationWithNext(amount={AMOUNT}, debt=True, counter=0),\nOperationWithNext(amount={AMOUNT}, debt=False, counter=0)]\n'.format(
+            'REGULAR_INCOME = {REGULAR_INCOME}\nNAME = "{NAME}"\nCURRENCY = "{CURRENCY}"\n\nOPERATIONS = [OperationWithNext(purpose="Undefined", amount={AMOUNT}, debt=True, counter=0),\nOperationWithNext(purpose="Undefined", amount={AMOUNT}, debt=False, counter=0)]\n'.format(
                 REGULAR_INCOME=self.REGULAR_INCOME,
                 NAME=self.NAME,
                 CURRENCY=self.CURRENCY,

@@ -121,10 +121,13 @@ class Operation:
 
     Its method "next" is responsible to create the Operation for the next period.
     If there is no next operation, it must raise NoNextOperation.
+
+    "purpose" stores a short sentence describing why the operation exists.
     """
-    def __init__(self, amount, debt=False):
+    def __init__(self, amount, purpose, debt=False):
         self._amount = amount
         self._debt = debt
+        self._purpose = purpose
 
     @property
     def amount(self):
@@ -134,10 +137,21 @@ class Operation:
     def debt(self):
         return self._debt
 
+    @property
+    def purpose(self):
+        return self._purpose
+
+    def get_formatted_attribute(self, parameter):
+        attribute = getattr(self, "_" + parameter)
+        if isinstance(attribute, str):
+            attribute = '"{}"'.format(attribute.replace('"', '\\"'))
+        return attribute
+
     def __repr__(self):
         constructor_parameters = list(signature(self.__class__.__init__).parameters)
         constructor_parameters.pop(0)
-        textual_argument = ["{p}={a}".format(p=parameter, a=self.__getattribute__("_" + parameter))
+        textual_argument = ["{p}={a}".format(p=parameter,
+                                             a=self.get_formatted_attribute(parameter))
                             for parameter in constructor_parameters]
         arguments = ", ".join(textual_argument)
 
@@ -148,8 +162,8 @@ class Operation:
 
 class SavingOperation(Operation):
     """Save money during one period"""
-    def __init__(self, amount):
-        super(SavingOperation, self).__init__(amount)
+    def __init__(self, purpose, amount):
+        super(SavingOperation, self).__init__(amount, purpose)
 
     def next(self):
         raise NoNextOperation()
@@ -157,7 +171,7 @@ class SavingOperation(Operation):
 
 class RegularSavingOperation(Operation):
     """Save an amount of money over several periods"""
-    def __init__(self, total_amount, nb_period_left, saved_amount):
+    def __init__(self, purpose, total_amount, nb_period_left, saved_amount):
         self._total_amount = total_amount
         self._nb_period_left = nb_period_left
         self._saved_amount = saved_amount
@@ -165,19 +179,25 @@ class RegularSavingOperation(Operation):
         saved_this_period = 0
         if self._nb_period_left >= 1:
             saved_this_period = (total_amount - saved_amount) / self._nb_period_left
-        super(RegularSavingOperation, self).__init__(saved_amount + saved_this_period)
+        super(RegularSavingOperation, self).__init__(saved_amount + saved_this_period, purpose)
 
     def next(self):
-        return RegularSavingOperation(self._total_amount, self._nb_period_left - 1, self.amount)
+        return RegularSavingOperation(self.purpose, self._total_amount, self._nb_period_left - 1, self.amount)
 
 
 class DebtOperation(Operation):
     """Pay a debt over a number of period"""
-    def __init__(self, total_amount, nb_period_left, payed_this_period, payed_amount):
+    def __init__(self, purpose, total_amount, nb_period_left, payed_this_period, payed_amount):
+        kwargs = {
+            "purpose": purpose,
+            "debt": True
+        }
         if not payed_this_period:
-            super(DebtOperation, self).__init__((total_amount - payed_amount) / nb_period_left, True)
+            kwargs["amount"] = (total_amount - payed_amount) / nb_period_left
         else:
-            super(DebtOperation, self).__init__(0, True)
+            kwargs["amount"] = 0
+        super(DebtOperation, self).__init__(**kwargs)
+
         self._total_amount = total_amount
         self._nb_period_left = nb_period_left
         self._payed_this_period = payed_this_period
@@ -185,20 +205,29 @@ class DebtOperation(Operation):
 
     def next(self):
         if self._nb_period_left - 1 >= 1:
-            return DebtOperation(self._total_amount, self._nb_period_left - 1, False, self._payed_amount + self.amount)
+            return DebtOperation(self.purpose, self._total_amount,
+                                 self._nb_period_left - 1, False,
+                                 self._payed_amount + self.amount)
         else:
             raise NoNextOperation()
 
 
 class RegularPaymentOperation(Operation):
     """Pay the same amount every period"""
-    def __init__(self, regular_amount, payed_this_period):
+    def __init__(self, purpose, regular_amount, payed_this_period):
+        kwargs = {
+            "purpose": purpose,
+            "debt": True
+        }
+
         if not payed_this_period:
-            super(RegularPaymentOperation, self).__init__(regular_amount, True)
+            kwargs["amount"] = regular_amount
         else:
-            super(RegularPaymentOperation, self).__init__(0, True)
+            kwargs["amount"] = 0
+        super(RegularPaymentOperation, self).__init__(**kwargs)
+
         self._regular_amount = regular_amount
         self._payed_this_period = payed_this_period
 
     def next(self):
-        return RegularPaymentOperation(self._regular_amount, False)
+        return RegularPaymentOperation(self.purpose, self._regular_amount, False)
