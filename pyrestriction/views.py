@@ -12,8 +12,14 @@ def _surround_separators(func):
 
 
 class AccountView(object):
-    def __init__(self, accountperiod):
+    def __init__(self, accountperiod, show_detail_operations):
         self._accountperiod = accountperiod
+        self._show_detail_operations = show_detail_operations
+
+    def _render_operation(self, operation_list):
+        if self._show_detail_operations:
+            for operation in operation_list:
+                print("    " + str(operation))
 
     @_surround_separators
     def _render_header_account(self, accountperiod):
@@ -21,6 +27,9 @@ class AccountView(object):
 
     @_surround_separators
     def _render_period(self, period_number, accountperiod):
+        operations_debt = [op for op in accountperiod.operations if op.debt]
+        operations_saved = [op for op in accountperiod.operations if not op.debt]
+
         # Print period number
         print("Period : ", end="")
         if(period_number == 0):
@@ -34,7 +43,9 @@ class AccountView(object):
         print("Amounts :")
         print("Total amount : {0}".format(accountperiod.total()))
         print("Debt amount : {0}".format(accountperiod.debt()))
+        self._render_operation(operations_debt)
         print("Saved amount : {0}".format(accountperiod.saved()))
+        self._render_operation(operations_saved)
         print("Avaliable amount : {0}".format(accountperiod.avaliable()))
 
     def render(self):

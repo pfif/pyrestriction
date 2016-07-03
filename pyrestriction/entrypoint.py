@@ -30,13 +30,16 @@ def entrypoint():
     # Available subcommand
     def subcommand_available(args):
         account = parse_account(args[AMOUNT_ARG], args[ACCOUNT_ARG].read())
-        view = AccountView(account)
+        view = AccountView(account, args["verbose"])
         return view
     available_parser = subparser.add_parser(
         "available", description="Show how much money is available on your account."
     )
     available_parser.add_argument(
         AMOUNT_ARG, type=int, help="The amount of money currently on the account"
+    )
+    available_parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Make the output more verbose"
     )
     available_parser.set_defaults(func=subcommand_available)
 
