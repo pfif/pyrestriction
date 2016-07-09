@@ -1,3 +1,5 @@
+from pyrestriction.model import AllowanceOperation
+
 # This file contains all the views that can display accounts
 
 SEPARATOR = "-------------------"
@@ -17,8 +19,9 @@ class AccountView(object):
         self._show_detail_operations = show_detail_operations
 
     def _render_operation(self, operation_list):
-        if self._show_detail_operations:
-            for operation in operation_list:
+        for operation in operation_list:
+            if (self._show_detail_operations or
+                    isinstance(operation, AllowanceOperation)):
                 print("    " + str(operation))
 
     @_surround_separators
