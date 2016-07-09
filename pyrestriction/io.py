@@ -1,4 +1,4 @@
-from pyrestriction.model import Account, SavingOperation, RegularSavingOperation, DebtOperation, RegularPaymentOperation
+from pyrestriction.model import Account, SavingOperation, RegularSavingOperation, DebtOperation, RegularPaymentOperation, AllowanceOperation
 
 
 def parse_account(current_amount, account_string):
@@ -6,7 +6,8 @@ def parse_account(current_amount, account_string):
     glob = {'SavingOperation': SavingOperation,
             'RegularSavingOperation': RegularSavingOperation,
             'DebtOperation': DebtOperation,
-            'RegularPaymentOperation': RegularPaymentOperation}
+            'RegularPaymentOperation': RegularPaymentOperation,
+            'AllowanceOperation': AllowanceOperation}
     loc = dict()
     exec(account_string, glob, loc)
     account = Account(current_amount, loc['REGULAR_INCOME'], loc['NAME'],

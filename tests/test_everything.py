@@ -1,7 +1,8 @@
 import unittest
 from pyrestriction.model import (
     Account, Operation, AccountPeriod, OperationsOnlyMode, SavingOperation,
-    DebtOperation, RegularPaymentOperation, RegularSavingOperation
+    DebtOperation, RegularPaymentOperation, RegularSavingOperation,
+    AllowanceOperation
 )
 from pyrestriction.exceptions import NoNextOperation
 from pyrestriction.io import write_account
@@ -375,6 +376,78 @@ class RegularSavingOperationTest(unittest.TestCase, TestPurposeMixin):
             "RegularSavingOperation - {} : {} (saved {} of {}, {} periods before completion)".format(
                 self.PURPOSE, self.compute_current_amount(),
                 self.ALREADY_SAVED, self.TOTAL_AMOUNT, self.NB_PERIOD_LEFT))
+
+
+class AllowanceOperationTest(unittest.TestCase, TestPurposeMixin):
+    TOTAL_AMOUNT = 100
+    SAFETY_MARGIN = 20
+
+    def run(self, *args, **kwargs):
+        self._state = "money_remaining"
+        super(AllowanceOperationTest, self).run(*args, **kwargs)
+
+        self._state = "in_safety_margin"
+        super(AllowanceOperationTest, self).run(*args, **kwargs)
+
+        self._state = "no_money_remaining"
+        super(AllowanceOperationTest, self).run(*args, **kwargs)
+
+    @property
+    def spent(self):
+        if self._state == "money_remaining":
+            return 90
+        elif self._state == "in_safety_margin":
+            return 110
+        elif self._state == "no_money_remaining":
+            return 150
+        else:
+            self.fail('No case programmed for this state')
+
+    def compute_current_amount(self):
+        if self._state in ["money_remaining", "in_safety_margin"]:
+            return self.TOTAL_AMOUNT + self.SAFETY_MARGIN - self.spent
+        elif self._state == "no_money_remaining":
+            return 0
+        else:
+            self.fail('No case programmed for this state')
+
+    def setUp(self):
+        self._instance = AllowanceOperation(self.PURPOSE, self.TOTAL_AMOUNT, self.SAFETY_MARGIN, self.spent)
+
+    def test_amount(self):
+        self.assertEqual(self.compute_current_amount(), self._instance.amount)
+
+    def test_amountnext(self):
+        next_op = self._instance.next()
+        self.assertEqual(next_op._spent, 0)
+        self.assertEqual(next_op.amount, self.TOTAL_AMOUNT + self.SAFETY_MARGIN)
+
+    def test_repr(self):
+        self.assertEqual(
+            self._instance.__repr__(),
+            'AllowanceOperation(purpose="{}", total_amount={}, safety_margin={}, spent={})'.format(
+                self.PURPOSE_ESCAPED, self.TOTAL_AMOUNT, self.SAFETY_MARGIN, self.spent)
+        )
+
+    def test_str(self):
+        additional_informations = "spent {} out of {}".format(
+            self.spent, self.TOTAL_AMOUNT)
+
+        if self._state == "no_money_remaining":
+            additional_informations += ", out of safety margin"
+        elif self._state == "in_safety_margin":
+            additional_informations += ", in safety margin"
+        elif self._state == "money_remaining":
+            pass
+        else:
+            self.fail('No case programmed for this state')
+
+        self.assertEqual(
+            self._instance.__str__(),
+            "AllowanceOperation - {} : {} ({})".format(
+                self.PURPOSE, self.compute_current_amount(),
+                additional_informations)
+        )
 
 
 class WriteAccountTest(unittest.TestCase):

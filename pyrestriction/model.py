@@ -251,3 +251,30 @@ class RegularPaymentOperation(Operation):
 
     def next(self):
         return RegularPaymentOperation(self.purpose, self._regular_amount, False)
+
+
+class AllowanceOperation(Operation):
+    def __init__(self, purpose, total_amount, safety_margin, spent):
+        self._total_amount = total_amount
+        self._safety_margin = safety_margin
+        self._spent = spent
+
+        amount = (total_amount + safety_margin - spent)
+        if amount < 0:
+            amount = 0
+        super(AllowanceOperation, self).__init__(amount, purpose, True)
+
+    def next(self):
+        return AllowanceOperation(self.purpose, self._total_amount,
+                                  self._safety_margin, 0)
+
+    @property
+    def additional_textual_informations(self):
+        information = "spent {} out of {}".format(self._spent, self._total_amount)
+
+        restricted = self._total_amount + self._safety_margin
+        if self._spent > restricted:
+            information += ", out of safety margin"
+        elif self._spent > self._total_amount:
+            information += ", in safety margin"
+        return information

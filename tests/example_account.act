@@ -10,5 +10,6 @@ REGULAR_INCOME = 1000
 OPERATIONS  = (
     SavingOperation("Present to Grandma", 200),
     RegularSavingOperation("Become rich", 500, 10, 70),
-    DebtOperation("Money owed to Grandma", 200, 2, False, 150)
+    DebtOperation("Money owed to Grandma", 200, 2, False, 150),
+    AllowanceOperation("Food", 200, 20, 150)
 )
